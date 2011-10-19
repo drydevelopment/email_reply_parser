@@ -77,6 +77,12 @@ I am currently using the Java HTTP API.\n", reply.fragments[0].to_s
     assert_equal "The Quick Brown Fox Jumps Over The Lazy Dog", original
   end
 
+	def test_hotmail_extra_reply_text
+		reply = email(:email_1_5)
+		assert_equal 3, reply.fragments.size
+		assert_equal "One More response from hotmail.\n\nOn multiple lines.", reply.fragments[0].to_s
+	end
+
   def email(name)
     body = IO.read EMAIL_FIXTURE_PATH.join("#{name}.txt").to_s
     EmailReplyParser.read body

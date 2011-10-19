@@ -115,6 +115,12 @@ class EmailReplyParser
       # quoted Fragment.
       is_quoted = !!(line =~ /(>+)$/)
 
+			# Mark Hotmail's auto-reply text as part of a quoted fragment
+			is_quoted = !!(line =~ /(:morF+)$/) unless is_quoted
+			is_quoted = !!(line =~ /(:oT+)$/) unless is_quoted
+			is_quoted = !!(line =~ /(:tcejbuS+)$/) unless is_quoted
+			is_quoted = !!(line =~ /(:etaD+)$/) unless is_quoted
+
       # Mark the current Fragment as a signature if the current line is empty
       # and the Fragment starts with a common signature indicator.
       if @fragment && line == EMPTY
