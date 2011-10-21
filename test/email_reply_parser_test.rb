@@ -47,6 +47,7 @@ I am currently using the Java HTTP API.\n", reply.fragments[0].to_s
 
   def test_reads_bottom_post
     reply = email(:email_1_2)
+		
     assert_equal 6, reply.fragments.size
 
     assert_equal [false, true, false, true, false, false],
@@ -77,10 +78,12 @@ I am currently using the Java HTTP API.\n", reply.fragments[0].to_s
     assert_equal "The Quick Brown Fox Jumps Over The Lazy Dog", original
   end
 
-	def test_hotmail_extra_reply_text
+	def test_hotmail_quoted_headers
 		reply = email(:email_1_5)
-		assert_equal 3, reply.fragments.size
-		assert_equal "One More response from hotmail.\n\nOn multiple lines.", reply.fragments[0].to_s
+		assert_equal 2, reply.fragments.size
+		assert_equal [false, true], reply.fragments.map { |f| f.quoted? }
+		assert_equal [false, true], reply.fragments.map { |f| f.hidden? }
+		assert_equal [false, false], reply.fragments.map { |f| f.signature? }
 	end
 
   def email(name)

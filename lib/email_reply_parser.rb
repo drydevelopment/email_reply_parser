@@ -111,18 +111,40 @@ class EmailReplyParser
       line.chomp!("\n")
       line.lstrip!
 
-      # We're looking for leading `>`'s to see if this line is part of a
-      # quoted Fragment.
-      is_quoted = !!(line =~ /(>+)$/)
+			is_quoted = check_for_quoted_text(line)
+			is_signature = check_for_signature(line)
+			is_quoted_header = check_for_quoted_headers(line)
 
-			# Mark Hotmail's auto-reply text as part of a quoted fragment
+			unless add_line_to_fragment(line, is_quoted, is_quoted_header)
+				finish_fragment
+				@fragment = Fragment.new(is_quoted, line)
+			end
+    end
+		
+		# We're looking for leading `>`'s to see if this line is part of a
+		# quoted Fragment.
+		def check_for_quoted_text(line)
+      is_quoted = !!(line =~ /(>+)$/)
+			is_quoted
+		end
+
+		def check_for_quoted_headers(line)
+			is_quoted = !!(line =~ /^:etorw.*nO$/)
+			is_quoted = check_for_hotmail_quoted_headers(line) unless is_quoted
+			is_quoted
+		end
+		
+		def check_for_hotmail_quoted_headers(line)
 			is_quoted = !!(line =~ /(:morF+)$/) unless is_quoted
 			is_quoted = !!(line =~ /(:oT+)$/) unless is_quoted
 			is_quoted = !!(line =~ /(:tcejbuS+)$/) unless is_quoted
 			is_quoted = !!(line =~ /(:etaD+)$/) unless is_quoted
+			is_quoted
+		end
 
-      # Mark the current Fragment as a signature if the current line is empty
-      # and the Fragment starts with a common signature indicator.
+		# Mark the current Fragment as a signature if the current line is empty
+		# and the Fragment starts with a common signature indicator.
+		def check_for_signature(line)
       if @fragment && line == EMPTY
         if @fragment.lines.last =~ /[\-\_]$/
           @fragment.signature = true
@@ -130,30 +152,25 @@ class EmailReplyParser
         end
       end
 
-      # If the line matches the current fragment, add it.  Note that a common
-      # reply header also counts as part of the quoted Fragment, even though
-      # it doesn't start with `>`.
+			@fragment ? @fragment.signature? : false
+		end
+
+		# If the line matches the current fragment, add it.  Note that a common
+		# reply header also counts as part of the quoted Fragment, even though
+		# it doesn't start with `>`.
+		def add_line_to_fragment(line, is_quoted, is_quoted_header)
+			is_added = false
+
       if @fragment &&
           ((@fragment.quoted? == is_quoted) ||
-           (@fragment.quoted? && (quote_header?(line) || line == EMPTY)))
+           (@fragment.quoted? && (is_quoted_header || line == EMPTY)))
+				@fragment.quoted = true if is_quoted_header && !is_quoted
         @fragment.lines << line
-
-      # Otherwise, finish the fragment and start a new one.
-      else
-        finish_fragment
-        @fragment = Fragment.new(is_quoted, line)
+				is_added = true
       end
-    end
 
-    # Detects if a given line is a header above a quoted area.  It is only
-    # checked for lines preceding quoted regions.
-    #
-    # line - A String line of text from the email.
-    #
-    # Returns true if the line is a valid header, or false.
-    def quote_header?(line)
-      line =~ /^:etorw.*nO$/
-    end
+			is_added
+		end
 
     # Builds the fragment string and reverses it, after all lines have been
     # added.  It also checks to see if this Fragment is hidden.  The hidden
@@ -180,6 +197,8 @@ class EmailReplyParser
     def finish_fragment
       if @fragment
         @fragment.finish
+
+				# TODO: Move to it's own block to check if hidden
         if !@found_visible
           if @fragment.quoted? || @fragment.signature? ||
               @fragment.to_s.strip == EMPTY
@@ -188,6 +207,7 @@ class EmailReplyParser
             @found_visible = true
           end
         end
+
         @fragments << @fragment
       end
       @fragment = nil
