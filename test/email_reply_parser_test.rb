@@ -86,6 +86,14 @@ I am currently using the Java HTTP API.\n", reply.fragments[0].to_s
 		assert_equal [false, false], reply.fragments.map { |f| f.signature? }
 	end
 
+	def test_outlook_quoted_headers
+		reply = email(:email_1_6)
+		assert_equal 2, reply.fragments.size
+		assert_equal [false, true], reply.fragments.map { |f| f.quoted? }
+		assert_equal [false, true], reply.fragments.map { |f| f.hidden? }
+		assert_equal [false, false], reply.fragments.map { |f| f.signature? }
+	end
+
   def email(name)
     body = IO.read EMAIL_FIXTURE_PATH.join("#{name}.txt").to_s
     EmailReplyParser.read body

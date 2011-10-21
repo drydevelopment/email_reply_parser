@@ -142,6 +142,11 @@ class EmailReplyParser
 			is_quoted
 		end
 
+		def check_for_outlook_quoted_headers(line)
+			is_quoted = !!(line =~ /(:tneS+)$/) unless is_quoted
+			is_quoted
+		end
+
 		# Mark the current Fragment as a signature if the current line is empty
 		# and the Fragment starts with a common signature indicator.
 		def check_for_signature(line)
